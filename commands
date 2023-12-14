@@ -1,0 +1,441 @@
+#include<dir.h>
+#include<io.h>
+#include<string.h>
+#include<stdio.h>
+#include<conio.h>
+#include<stdlib.h>
+#include<process.h>
+
+//mkdir command
+void mkdirectory(int argc, char* argv[]) {
+	 if (argc == 1) {
+	     printf("\nInvalid parameter.\n");
+	     return;
+	   }
+	 if (argc > 2) {
+	     printf("\nToo many parameters\n");
+	     return;
+	   }
+
+	 if ((mkdir(argv[1])) == 0) {
+	     printf("\nDirectory created\n");
+	   } else {
+	     perror("Error\n");
+       }
+}
+   //cd command
+void changeDirectory(int argc, char* argv[]) {
+	 if (argc == 1) {
+		printf("\nInvalid parameter");
+		return;
+       }
+	 if (argc > 2) {
+		printf("\nToo many parameters");
+		return;
+       }
+	 if (argc == 2) {
+		if ((chdir(argv[1])) == 0) {
+		      printf("\nDirectory changed\n");
+	}        else {
+		      perror("Error\n");
+	}
+    }
+}
+
+   //ls command
+struct fil {
+    char name[20];
+    long size;
+} fb[50], temp;
+
+void listFiles() {
+	     struct ffblk f;
+	     int d;
+	      d = findfirst("*.cpp", &f, 2);
+	      while (!d) {
+	      printf("\n %s", f.ff_name);
+	      d = findnext(&f);
+	  }
+}
+
+void listAllFilesDetails() {
+    struct ffblk f;
+    struct ftime t;
+    FILE* fp;
+    int d, i, j, k;
+    i = 0;
+    d = findfirst("*.cpp", &f, 2);
+    while (!d) {
+	strcpy(fb[i].name, f.ff_name);
+	fb[i].size = f.ff_fsize;
+	d = findnext(&f);
+	i++;
+    }
+    for (k = 0; k < i; k++) {
+	for (j = 0; j < i; j++) {
+	    if (fb[j].name[0] > fb[j + 1].name[0]) {
+		temp = fb[j];
+		fb[j] = fb[j + 1];
+		fb[j + 1] = temp;
+	    }
+	}
+    }
+    for (j = 0; j < i; j++) {
+	printf("\n %s \t \t %d ", fb[j].name, fb[j].size);
+	fp = fopen(fb[j].name, "r");
+	getftime(fileno(fp), &t);
+	printf("\t \t %d-%d-%d", t.ft_day, t.ft_month, t.ft_year + 1980);
+	printf("\t \t %d-%d-%d", t.ft_hour, t.ft_min, t.ft_tsec);
+    }
+}
+
+void listFilesBySize() {
+    struct ffblk f;
+    struct ftime t;
+    FILE* fp;
+    int d, i, j, k;
+    i = 0;
+    d = findfirst("*.cpp", &f, 2);
+    while (!d) {
+	strcpy(fb[i].name, f.ff_name);
+	fb[i].size = f.ff_fsize;
+	d = findnext(&f);
+	i++;
+    }
+    for (k = 0; k < i; k++) {
+	for (j = 0; j < i; j++) {
+	    if (fb[j].size > fb[j + 1].size) {
+		temp = fb[j];
+		fb[j] = fb[j + 1];
+		fb[j + 1] = temp;
+	    }
+	}
+    }
+    for (j = 0; j < i; j++) {
+	printf("\n %s \t \t %d ", fb[j].name, fb[j].size);
+	fp = fopen(fb[j].name, "r");
+	getftime(fileno(fp), &t);
+	printf("\t \t %d-%d-%d", t.ft_day, t.ft_month, t.ft_year + 1980);
+	printf("\t \t %d-%d-%d", t.ft_hour, t.ft_min, t.ft_tsec);
+    }
+}
+//touch command
+
+void touch() {
+	char filename[100];
+	printf("Enter the filename: ");
+	 scanf("%s", filename);
+
+	// Open the file in write mode if not exists
+	 FILE *file = fopen(filename, "w");
+	 if (file == NULL) {
+		printf("Error creating file.\n");
+		return;
+    }
+
+    fclose(file); // Close the file
+    printf("File '%s' created or updated.\n", filename);
+}
+
+    //echo command
+void echo(const char *filename) {
+	   FILE *file = fopen(filename, "w");
+	   if (file == NULL) {
+		printf("Error opening file!\n");
+		return;
+    }
+
+    char input[100];
+    printf("Enter text to write to the file: ");
+    fgets(input, sizeof(input), stdin);
+
+    fprintf(file, "%s", input);
+    fclose(file);
+
+    printf("Text written to the file successfully.\n");
+}
+
+ //cat command
+ void cat(const char *name) {
+		 FILE *f1;
+		char ch;
+		f1 = fopen(name, "r");
+	     while ((ch = getc(f1)) != EOF) {
+		printf("%c", ch);
+       }
+	  fclose(f1);
+}
+
+//copy file
+void copyFile(const char *sourceFile, const char *destinationFile) {
+	FILE *f1 = fopen(sourceFile, "r");
+	FILE *f2 = fopen(destinationFile, "w");
+
+	if (f1 == NULL || f2 == NULL) {
+	printf("Error opening files!\n");
+	return;
+    }
+
+    char ch;
+    while ((ch = getc(f1)) != EOF) {
+	putc(ch, f2);
+    }
+
+    printf("File copied.\n");
+
+    fclose(f1);
+    fclose(f2);
+}
+
+void displayFileContents(const char *filename) {
+    FILE *file = fopen(filename, "r");
+
+    if (file == NULL) {
+	printf("Error opening file!\n");
+	return;
+    }
+
+    char ch;
+    printf("Contents of the file '%s':\n", filename);
+    while ((ch = getc(file)) != EOF) {
+	printf("%c", ch);
+    }
+
+    fclose(file);
+}
+//move file
+
+int moveFile(const char *sourceFileName, const char *destinationFileName) {
+    FILE *source, *destination;
+    char ch;
+
+    // Open the source file for reading
+    source = fopen(sourceFileName, "rb");
+    if (source == NULL) {
+	perror("Error opening source file\n");
+	return 1;
+    }
+
+    // Open the destination file for writing
+    destination = fopen(destinationFileName, "wb");
+    if (destination == NULL) {
+	perror("Error opening destination file\n");
+	fclose(source);
+	return 2;
+    }
+
+    // Copy contents from source to destination
+    while ((ch = fgetc(source)) != EOF) {
+	fputc(ch, destination);
+    }
+
+    // Close the files
+    fclose(source);
+    fclose(destination);
+
+    // Remove the source file
+    if (remove(sourceFileName) != 0) {
+	perror("Error deleting source file\n");
+	return 3;
+    }
+
+    printf("File moved successfully.\n");
+
+    return 0;
+}
+
+//remove file
+
+void removeFiles(int argc, char *argv[]) {
+    if (argc < 2) {
+	printf("Usage: %s <file1> [<file2> ...]\n", argv[0]);
+	return;
+    }
+
+    for (int i = 1; i < argc; i++) {
+	if (remove(argv[i]) == 0) {
+	    printf("File '%s' removed successfully.\n", argv[i]);
+	} else {
+	    printf("Error: Unable to remove '%s'.\n", argv[i]);
+	}
+    }
+}
+   //grep command
+void grep(const char *pattern, FILE *file) {
+    char line[1000];
+    int line_number = 1;
+
+    while (fgets(line, sizeof(line), file) != NULL) {
+	if (strstr(line, pattern) != NULL) {
+	    printf("Match found in line %d: %s", line_number, line);
+	}
+	line_number++;
+    }
+}
+
+void printMenu() {
+    printf("\npress a : mkdir\n ");
+    printf("press b : cd\n ");
+    printf("press c : ls\n ");
+    printf("press d : touch\n ");
+    printf("press e : echo\n ");
+    printf("press f : cat\n ");
+    printf("press g : cp\n ");
+    printf("press h : mv\n ");
+    printf("press i : rm\n ");
+    printf("press j : grep\n ");
+    printf("press q : Quit\n ");
+}
+
+
+
+int main(int argc, char* argv[]) {
+  //  clrscr();
+  //  char cmd;
+
+
+     char cmd;
+     printf("press m : to show in which character  the commands is presents\n");
+    printf("press a to q : otherwise to execute the commands\n");
+    printf("\nenter cmd: ");
+    scanf("%c",&cmd);
+    fflush(stdin);//clear the input buffer
+    switch(cmd){
+    case 'm':  printMenu() ;
+	       break ;
+    case 'a':
+
+	     mkdirectory(argc, argv);
+	      break;
+
+    case 'b':
+	      changeDirectory(argc, argv);
+	      break;
+
+
+    case 'c':
+	      if (argc == 1) {
+		listFiles();
+	    } else if (argc > 2) {
+		perror("error");
+		exit(0);
+	     } else {
+		if (strcmp(argv[1], "-a") == 0) {
+		    listAllFilesDetails();
+		} else if (strcmp(argv[1], "-l") == 0) {
+		     listFilesBySize();
+		}
+    }
+	       break;
+
+  case 'd':
+		 touch();
+		  break;
+
+  case 'e' :
+		char filename[100];
+	    printf("Enter the filename: ");
+	   fgets(filename, sizeof(filename), stdin);
+
+	// Removing potential newline character from the filename
+	 if (filename[strlen(filename) - 1] == '\n') {
+		filename[strlen(filename) - 1] = '\0';
+      }
+
+	  echo(filename);
+	  break;
+
+   case 'f':
+	    //  char filename[100];
+	   printf("Enter the filename: ");
+	   fgets(filename, sizeof(filename), stdin);
+
+	 // Removing potential newline character from the filename
+	 if (filename[strlen(filename) - 1] == '\n') {
+		filename[strlen(filename) - 1] = '\0';
+    }
+	  cat(filename);
+	  break;
+
+   case 'g':
+		if (argc == 1) {
+			printf("Invalid parameters\n");
+		return 1;
+	      } else if (argc > 3) {
+		printf("Too many parameters\n");
+		return 1;
+	      } else if (argc == 3) {
+		copyFile(argv[1], argv[2]);
+		displayFileContents(argv[2]);
+	}
+	      break;
+
+   case 'h' :
+	      char sourceFileName[100];
+	      char destinationFileName[100];
+
+	   // Get source file name from the user
+	     printf("Enter the source file name: ");
+	     scanf("%s", sourceFileName);
+
+	   // Check if the source file exists
+	   FILE *source = fopen(sourceFileName, "rb");
+	   if (source == NULL) {
+		perror("Error opening source file");
+		return 4;
+    }
+	 fclose(source);
+
+	 // Get destination file name from the user
+	   printf("Enter the destination file name: ");
+	  scanf("%s", destinationFileName);
+
+	  int result = moveFile(sourceFileName, destinationFileName);
+
+	   return result;
+
+	  // break;
+
+  case 'i':
+		removeFiles(argc, argv);
+		 break;
+
+  case 'j':
+	  char pattern[100];
+       // char filename[100];
+
+	printf("Enter pattern to search: ");
+	fgets(pattern, sizeof(pattern), stdin);
+	if (pattern[strlen(pattern) - 1] == '\n') {
+	pattern[strlen(pattern) - 1] = '\0'; // Removing newline character
+    }
+
+    printf("Enter filename to search in: ");
+    fgets(filename, sizeof(filename), stdin);
+    if (filename[strlen(filename) - 1] == '\n') {
+	filename[strlen(filename) - 1] = '\0'; // Removing newline character
+    }
+
+    FILE *file = fopen(filename, "r");
+    if (file == NULL) {
+	printf("Error: Could not open file '%s'\n", filename);
+	return 1;
+    }
+
+    grep(pattern, file);
+
+    fclose(file);
+    break;
+
+    default:printf("invalid entry");
+	    break;
+
+}
+
+
+    getch();
+    return 0;
+}
+
+
+
